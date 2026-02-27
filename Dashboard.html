@@ -6,6 +6,14 @@
     <title>لوحة التحكم - أكاديمية كن أنت</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        .stat-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1) !important;
+        }
+
         :root { --primary: #1e3c72; --secondary: #2a5298; --bg: #f8f9fa; --sidebar-width: 260px; --text: #333; }
         body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); display: flex; height: 100vh; color: var(--text); overflow: hidden; }
         
@@ -67,7 +75,9 @@
             </div>
             
             <div id="affiliateMenu" class="hidden">
-                <a class="menu-item" onclick="showSection('marketingSection', this)"><i class="fas fa-share-alt"></i> التسويق</a>
+                <a class="menu-item" onclick="showSection('marketingSection', this); loadDelegateDashboard();">
+                    <i class="fas fa-share-alt"></i> التسويق
+                </a>
             </div>
             
             <div id="adminMenu" class="hidden">
@@ -94,10 +104,53 @@
             </div>
         </div>
 
+        <div id="marketingSection" class="content-section hidden">
+            <div class="card">
+                <h3 style="color: #2c3e50; border-bottom: 2px solid #27ae60; padding-bottom: 10px;">
+                    <i class="fas fa-chart-pie"></i> إحصائيات التسويق والعمولات
+                </h3>
+                
+                <div class="stats-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 20px;">
+                    <div class="stat-card" style="background: #f8f9fa; border-right: 5px solid #3498db; padding: 15px; border-radius: 8px;">
+                        <small>إجمالي المسجلين عبر رابطك</small>
+                        <h2 id="stat-totalReferrals" style="color: #3498db; margin: 5px 0;">0</h2>
+                    </div>
+                    <div class="stat-card" style="background: #f8f9fa; border-right: 5px solid #27ae60; padding: 15px; border-radius: 8px;">
+                        <small>الطلاب المؤكدين (الذين دفعوا)</small>
+                        <h2 id="stat-activeStudents" style="color: #27ae60; margin: 5px 0;">0</h2>
+                    </div>
+                    <div class="stat-card" style="background: #f8f9fa; border-right: 5px solid #f1c40f; padding: 15px; border-radius: 8px;">
+                        <small>إجمالي العمولات المستحقة</small>
+                        <h2 id="stat-totalCommission" style="color: #f1c40f; margin: 5px 0;">0</h2>
+                    </div>
+                    <div class="stat-card" style="background: #27ae60; color: white; padding: 15px; border-radius: 8px;">
+                        <small>الرصيد القابل للسحب حالياً</small>
+                        <h2 id="stat-currentBalance" style="margin: 5px 0;">0</h2>
+                    </div>
+                </div>
+
+                <div style="margin-top: 30px;">
+                    <h4 style="color: #7f8c8d;"><i class="fas fa-users"></i> قائمة الطلاب المسجلين عن طريقك</h4>
+                    <div class="table-container">
+                        <table id="delegateStudentsTable">
+                            <thead>
+                                <tr style="background-color: #ecf0f1;">
+                                    <th>اسم الطالب</th>
+                                    <th>تاريخ التسجيل</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div id="adminSection" class="content-section hidden">
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                    <h3><i class="fas fa-users"></i> إدارة المستخدمين</h3>
+                    <h3><i class="fas fa-user-shield"></i> إدارة المستخدمين</h3>
                     <button onclick="loadUsers()" class="btn-refresh"><i class="fas fa-sync-alt"></i> تحديث القائمة</button>
                 </div>
                 
@@ -131,15 +184,7 @@
             </div>
         </div>
 
-        <div id="marketingSection" class="content-section hidden">
-            <div class="card">
-                <h3><i class="fas fa-dollar-sign"></i> نظام التسويق بالعمولة</h3>
-                <p>هنا تظهر إحصائياتك كمندوب مسوق للأكاديمية.</p>
-            </div>
-        </div>
-    </div>
-
-    <div id="promoteModal" class="modal">
+    </div> <div id="promoteModal" class="modal">
         <div class="modal-content">
             <i class="fas fa-user-edit fa-3x" style="color: var(--secondary); margin-bottom: 15px;"></i>
             <h3>تغيير رتبة المستخدم</h3>
@@ -216,20 +261,16 @@
             loader.classList.remove("hidden");
 
             try {
-                
-                
-                // الكود الجديد والمصحح
-const response = await fetch(SCRIPT_URL, {
-    method: "POST",
-    body: JSON.stringify({ 
-        action: "getAllUsers", 
-        payload: {} // أضفنا هذا الكائن الفارغ هنا ✅
-    })
-});
+                const response = await fetch(SCRIPT_URL, {
+                    method: "POST",
+                    body: JSON.stringify({ 
+                        action: "getAllUsers", 
+                        payload: {} 
+                    })
+                });
 
-const result = await response.json();
-loader.classList.add("hidden");
-
+                const result = await response.json();
+                loader.classList.add("hidden");
 
                 if(result.success) {
                     result.users.forEach(user => {
@@ -299,57 +340,95 @@ loader.classList.add("hidden");
         }
 
         // التحقق عند تحميل الصفحة
-        // التحقق عند تحميل الصفحة - الاعتماد الكامل على السيرفر
-window.onload = async function() {
-    const userId = localStorage.getItem("userId");
-    const name = localStorage.getItem("userName");
+        window.onload = async function() {
+            const userId = localStorage.getItem("userId");
+            const name = localStorage.getItem("userName");
 
-    // 1. إذا لم يوجد معرف مستخدم، اخرج فوراً
-    if (!userId) { 
-        window.location.href = "auth.html"; 
-        return; 
-    }
+            if (!userId) { 
+                window.location.href = "auth.html"; 
+                return; 
+            }
 
-    // 2. إظهار حالة "جاري التحقق" للمستخدم
-    document.getElementById("roleText").innerText = "جاري التحقق من الصلاحيات...";
-    
-    try {
-        // 3. الطلب المباشر من السيرفر لمعرفة الرتبة الحالية (المرجع النهائي)
-        const response = await fetch(SCRIPT_URL, {
-            method: "POST",
-            body: JSON.stringify({ 
-                action: "getCurrentRole", 
-                payload: { userId: userId } 
-            })
-        });
-        
-        const result = await response.json();
-
-        if (result.success) {
-            // تحديث الرتبة في التخزين المحلي وفي الواجهة بناءً على رد السيرفر فقط
-            const currentRoleFromServer = result.roleId; 
-            localStorage.setItem("userRole", currentRoleFromServer);
+            document.getElementById("roleText").innerText = "جاري التحقق من الصلاحيات...";
             
-            // تحديث القوائم والواجهة بناءً على ما قاله السيرفر الآن
-            updateUIMenu(currentRoleFromServer, name);
-        } else {
-            // إذا فشل السيرفر في إيجاد المستخدم (مثلاً تم حذفه)
-            alert("جلسة العمل انتهت أو المستخدم غير موجود");
-            logout();
-        }
-    } catch (e) {
-        console.error("خطأ في الاتصال بالسيرفر:", e);
-        // في حال انقطاع الإنترنت، نعتمد على آخر رتبة مسجلة مؤقتاً لعدم تعطيل المستخدم
-        let lastRole = localStorage.getItem("userRole");
-        updateUIMenu(lastRole, name);
-        document.getElementById("roleText").innerText += " (وضع الأوفلاين)";
-    }
-}
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: "POST",
+                    body: JSON.stringify({ 
+                        action: "getCurrentRole", 
+                        payload: { userId: userId } 
+                    })
+                });
+                
+                const result = await response.json();
 
+                if (result.success) {
+                    const currentRoleFromServer = result.roleId; 
+                    localStorage.setItem("userRole", currentRoleFromServer);
+                    updateUIMenu(currentRoleFromServer, name);
+                } else {
+                    alert("جلسة العمل انتهت أو المستخدم غير موجود");
+                    logout();
+                }
+            } catch (e) {
+                console.error("خطأ في الاتصال بالسيرفر:", e);
+                let lastRole = localStorage.getItem("userRole");
+                updateUIMenu(lastRole, name);
+                document.getElementById("roleText").innerText += " (وضع الأوفلاين)";
+            }
+        }
 
         function logout() { 
             localStorage.clear(); 
             window.location.href = "auth.html"; 
+        }
+        
+        // جلب بيانات المندوب باستخدام Fetch API
+        async function loadDelegateDashboard() {
+            const userId = localStorage.getItem("userId");
+            const tbody = document.querySelector("#delegateStudentsTable tbody");
+            
+            tbody.innerHTML = "<tr><td colspan='2' style='text-align:center;'>جاري جلب البيانات...</td></tr>";
+
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        action: "getDelegateStats",
+                        payload: { delegateId: userId }
+                    })
+                });
+                
+                const result = await response.json();
+
+                if (result.success) {
+                    const d = result.data.summary;
+                    const students = result.data.studentsList;
+
+                    document.getElementById("stat-totalReferrals").innerText = d.totalReferrals;
+                    document.getElementById("stat-activeStudents").innerText = d.activeStudents;
+                    document.getElementById("stat-totalCommission").innerText = d.totalCommission.toFixed(2) + " $";
+                    document.getElementById("stat-currentBalance").innerText = d.currentBalance.toFixed(2) + " $";
+
+                    tbody.innerHTML = ""; 
+                    if (students.length === 0) {
+                        tbody.innerHTML = "<tr><td colspan='2' style='text-align:center;'>لا يوجد طلاب مسجلين بعد</td></tr>";
+                    } else {
+                        students.forEach(student => {
+                            const row = `<tr>
+                                <td>${student.الاسم_الكامل}</td>
+                                <td>${new Date(student.تاريخ_الإنشاء).toLocaleDateString('ar-EG')}</td>
+                            </tr>`;
+                            tbody.innerHTML += row;
+                        });
+                    }
+                } else {
+                    tbody.innerHTML = "<tr><td colspan='2' style='text-align:center; color:red;'>فشل تحميل البيانات</td></tr>";
+                }
+            } catch (e) {
+                console.error("Error:", e);
+                tbody.innerHTML = "<tr><td colspan='2' style='text-align:center; color:red;'>خطأ في الاتصال بالسيرفر</td></tr>";
+            }
         }
     </script>
 </body>
