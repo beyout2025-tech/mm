@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>أكاديمية كن أنت - تسجيل الدخول</title>
+
+<link rel="stylesheet" href="assets/fonts/tajawal.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<style>
+body{
+  margin:0;
+  font-family: 'Tajawal', sans-serif;
+  background: linear-gradient(135deg,#1e3c72,#2a5298);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+
+.container{
+  background:#fff;
+  width:380px;
+  padding:30px;
+  border-radius:12px;
+  box-shadow:0 10px 25px rgba(0,0,0,0.2);
+}
+
+h2{
+  text-align:center;
+  margin-bottom:20px;
+  color: #333;
+}
+
+input, select{
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+button{
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:8px;
+  background:#2a5298;
+  color:#fff;
+  font-size:15px;
+  cursor:pointer;
+  transition:.3s;
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+button:hover{
+  background:#1e3c72;
+}
+
+button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.toggle{
+  text-align:center;
+  margin-top:15px;
+  cursor:pointer;
+  color:#2a5298;
+  font-size:14px;
+}
+
+.message{
+  margin-top:12px;
+  text-align:center;
+  font-size:14px;
+  min-height: 20px;
+}
+.success{ color:green; font-weight: bold; }
+.error{ color:red; font-weight: bold; }
+
+.hidden{ display:none !important; }
+
+.strength-meter {
+  height: 4px;
+  width: 100%;
+  background-color: #eee;
+  margin-top: -5px;
+  margin-bottom: 10px;
+  border-radius: 2px;
+  overflow: hidden;
+  display: none;
+}
+.strength-meter-fill {
+  height: 100%;
+  width: 0%;
+  transition: all 0.5s ease;
+}
+
+.spinner {
+  display: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s linear infinite;
+  margin-left: 10px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.show-pass{
+  position: relative;
+}
+.show-pass i {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #2a5298;
+}
+
+
+button:active {
+  transform: scale(0.98);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <h2 id="formTitle">تسجيل الدخول</h2>
+
+  <input type="text" id="name" class="hidden" placeholder="الاسم الكامل">
+
+  <div id="regExtraFields" class="hidden">
+    <select id="gender">
+      <option value="">اختر الجنس</option>
+      <option value="ذكر">ذكر</option>
+      <option value="أنثى">أنثى</option>
+    </select>
+
+    <select id="country">
+      <option value="">اختر البلد</option>
+    </select>
+
+    <input type="text" id="phone" placeholder="رقم الهاتف">
+  </div>
+
+  <input type="email" id="email" placeholder="البريد الإلكتروني">
+
+  <div class="show-pass">
+    <input type="password" id="password" placeholder="كلمة المرور" oninput="checkPasswordStrength(this.value)">
+    <i class="fas fa-eye" id="togglePass" onclick="togglePasswordVisibility('password', 'togglePass')"></i>
+  </div>
+
+  <div id="meterCont" class="strength-meter">
+    <div id="meterFill" class="strength-meter-fill"></div>
+  </div>
+
+  <div class="show-pass hidden" id="confirmPassCont">
+    <input type="password" id="confirmPassword" placeholder="تأكيد كلمة المرور">
+    <i class="fas fa-eye" id="toggleConfirm" onclick="togglePasswordVisibility('confirmPassword', 'toggleConfirm')"></i>
+  </div>
+
+  <button onclick="submitForm()" id="submitBtn">
+    <span id="btnText">دخول</span>
+    <div id="btnSpinner" class="spinner"></div>
+  </button>
+
+  <div class="toggle" onclick="toggleForm()" id="toggleText">
+    ليس لديك حساب؟ إنشاء حساب
+  </div>
+
+  <div class="message" id="msg"></div>
+</div>
+
+<script src="url/url.js"></script>
+
+<script>
+	
+	// التقاط معرف المندوب من الرابط تلقائياً
+const urlParams = new URLSearchParams(window.location.search);
+const referralId = urlParams.get('ref') || "TTTTTT11";
+let isLogin = true;
+
+// الدالة الموحدة والمحدثة لجلب البلدان
+async function fillCountries() {
+    const select = document.getElementById("country");
+    if(!select) return;
+
+    try {
+        const response = await fetch(SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify({
+                action: "getDropdownList",
+                payload: { type: "countries" }
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            select.innerHTML = '<option value="">اختر البلد</option>';
+            result.data.forEach(c => {
+                const opt = document.createElement("option");
+                opt.value = c.id;   // المعرف الموحد من السيرفر
+                opt.text = c.name; // الاسم الموحد من السيرفر
+                select.add(opt);
+            });
+        }
+    } catch (err) {
+        console.error("خطأ في جلب البلدان:", err);
+    }
+}
+
+// تشغيل الجلب عند تحميل الصفحة
+window.onload = fillCountries;
+
+
+
+function togglePasswordVisibility(inputId, iconId) {
+  const input = document.getElementById(inputId);
+  const icon = document.getElementById(iconId);
+  if (input.type === "password") {
+    input.type = "text";
+    icon.classList.replace("fa-eye", "fa-eye-slash");
+  } else {
+    input.type = "password";
+    icon.classList.replace("fa-eye-slash", "fa-eye");
+  }
+}
+
+function checkPasswordStrength(password) {
+    const meter = document.getElementById("meterCont");
+    const fill = document.getElementById("meterFill");
+    if (isLogin || password.length === 0) {
+        meter.style.display = "none";
+        return;
+    }
+    meter.style.display = "block";
+    let strength = 0;
+    if (password.length > 5) strength += 25;
+    if (password.match(/[A-Z]/)) strength += 25;
+    if (password.match(/[0-9]/)) strength += 25;
+    if (password.match(/[^A-Za-z0-9]/)) strength += 25;
+    fill.style.width = strength + "%";
+    fill.style.backgroundColor = strength <= 25 ? "#ff4d4d" : strength <= 50 ? "#ffa64d" : strength <= 75 ? "#94ff1a" : "#2eb82e";
+}
+
+function toggleForm(){
+  isLogin = !isLogin;
+  document.getElementById("name").classList.toggle("hidden");
+  document.getElementById("regExtraFields").classList.toggle("hidden");
+  document.getElementById("confirmPassCont").classList.toggle("hidden");
+  document.getElementById("meterCont").style.display = "none";
+
+  document.getElementById("formTitle").innerText = isLogin ? "تسجيل الدخول" : "إنشاء حساب";
+  document.getElementById("btnText").innerText = isLogin ? "دخول" : "تسجيل";
+  document.getElementById("toggleText").innerText = isLogin ? "ليس لديك حساب؟ إنشاء حساب" : "لديك حساب؟ تسجيل الدخول";
+  document.getElementById("msg").innerText = "";
+}
+
+async function submitForm() {
+    const msg = document.getElementById("msg");
+    const submitBtn = document.getElementById("submitBtn");
+    const btnSpinner = document.getElementById("btnSpinner");
+    const btnText = document.getElementById("btnText");
+
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
+    const name = document.getElementById("name").value.trim();
+    const gender = document.getElementById("gender").value;
+    const country = document.getElementById("country").value;
+    const phone = document.getElementById("phone").value.trim();
+    const confirmPassword = document.getElementById("confirmPassword").value.trim();
+
+    msg.innerText = "";
+    if (!email || !password) {
+        msg.innerText = "يرجى تعبئة البيانات الأساسية";
+        msg.className = "message error";
+        return;
+    }
+
+    let requestData;
+    if (isLogin) {
+        requestData = { action: "login", payload: { email: email, password: password } };
+    } else {
+        if (!name || !gender || !country || !phone) {
+            msg.innerText = "يرجى إكمال الحقول";
+            msg.className = "message error";
+            return;
+        }
+        if (password !== confirmPassword) {
+            msg.innerText = "كلمات المرور غير متطابقة";
+            msg.className = "message error";
+            return;
+        }
+        requestData = {
+            action: "registerUser",
+            payload: {
+                data: {
+                    "name": name,
+                    "email": email,
+                    "password": password,
+                    "gender": gender,
+                    "country": country,
+                    "phone": phone,
+                    "city": "غير محدد",
+                    "referrer": referralId
+                }
+            }
+        };
+    }
+
+    submitBtn.disabled = true;
+    btnSpinner.style.display = "inline-block";
+    btnText.innerText = "جاري الحفظ...";
+
+    try {
+        const response = await fetch(SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify(requestData)
+        });
+
+        const result = await response.json();
+        
+        // إعادة تهيئة الزر
+        submitBtn.disabled = false;
+        btnSpinner.style.display = "none";
+        btnText.innerText = isLogin ? "دخول" : "تسجيل";
+
+        if (result.success) {
+            msg.innerText = isLogin ? "تم الدخول!" : "تم التسجيل بنجاح!";
+            msg.className = "message success";
+
+            if (isLogin) {
+                // تخزين البيانات للتأكد من عمل index
+                localStorage.setItem("userId", result.userId);
+                // استخدام الأسماء البديلة لضمان جلب البيانات أياً كان مسمى السيرفر
+                localStorage.setItem("userName", result.userName || result.name || "مستخدم");
+                localStorage.setItem("userRole", result.userRole || result.role || "ROL-00000004");
+
+                setTimeout(() => { window.location.href = "index.html"; }, 1500);
+            } else {
+                setTimeout(() => toggleForm(), 1500);
+            }
+        } else {
+            let displayMessage = result.message || "فشل الطلب";
+            if (displayMessage.indexOf("البريد_الإلكتروني") !== -1) {
+                displayMessage = "هذا البريد الإلكتروني مسجل مسبقاً.";
+            }
+            msg.innerText = displayMessage;
+            msg.className = "message error";
+        }
+
+    } catch (err) {
+        submitBtn.disabled = false;
+        btnSpinner.style.display = "none";
+        btnText.innerText = isLogin ? "دخول" : "تسجيل";
+        msg.innerText = "حدث خطأ في الاتصال بالسيرفر";
+        msg.className = "message error";
+    }
+}
+
+
+// دالة بسيطة للتحقق من البيانات قبل الإرسال
+function validateData(data) {
+  if (data.password.length < 8) return "كلمة المرور يجب أن تكون 8 أحرف على الأقل";
+  if (!data.email.includes("@")) return "البريد الإلكتروني غير صحيح";
+  if (data.phone.length < 7) return "رقم الهاتف غير مكتمل";
+  return null;
+}
+
+
+
+</script>
+
+</body>
+</html>
