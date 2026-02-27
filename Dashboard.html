@@ -296,7 +296,7 @@
             let roleId = localStorage.getItem("userRole");
             const name = localStorage.getItem("userName");
 
-            if (!userId) { window.location.href = "login.html"; return; }
+            if (!userId) { window.location.href = "auth.html"; return; }
 
             updateUIMenu(roleId, name);
 
@@ -316,7 +316,7 @@
 
         function logout() { 
             localStorage.clear(); 
-            window.location.href = "login.html"; 
+            window.location.href = "auth.html"; 
         }
     </script>
 </body>
