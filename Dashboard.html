@@ -216,12 +216,20 @@
             loader.classList.remove("hidden");
 
             try {
-                const response = await fetch(SCRIPT_URL, {
-                    method: "POST",
-                    body: JSON.stringify({ action: "getAllUsers" })
-                });
-                const result = await response.json();
-                loader.classList.add("hidden");
+                
+                
+                // الكود الجديد والمصحح
+const response = await fetch(SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify({ 
+        action: "getAllUsers", 
+        payload: {} // أضفنا هذا الكائن الفارغ هنا ✅
+    })
+});
+
+const result = await response.json();
+loader.classList.add("hidden");
+
 
                 if(result.success) {
                     result.users.forEach(user => {
@@ -291,28 +299,53 @@
         }
 
         // التحقق عند تحميل الصفحة
-        window.onload = async function() {
-            const userId = localStorage.getItem("userId");
-            let roleId = localStorage.getItem("userRole");
-            const name = localStorage.getItem("userName");
+        // التحقق عند تحميل الصفحة - الاعتماد الكامل على السيرفر
+window.onload = async function() {
+    const userId = localStorage.getItem("userId");
+    const name = localStorage.getItem("userName");
 
-            if (!userId) { window.location.href = "auth.html"; return; }
+    // 1. إذا لم يوجد معرف مستخدم، اخرج فوراً
+    if (!userId) { 
+        window.location.href = "auth.html"; 
+        return; 
+    }
 
-            updateUIMenu(roleId, name);
+    // 2. إظهار حالة "جاري التحقق" للمستخدم
+    document.getElementById("roleText").innerText = "جاري التحقق من الصلاحيات...";
+    
+    try {
+        // 3. الطلب المباشر من السيرفر لمعرفة الرتبة الحالية (المرجع النهائي)
+        const response = await fetch(SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify({ 
+                action: "getCurrentRole", 
+                payload: { userId: userId } 
+            })
+        });
+        
+        const result = await response.json();
 
-            // تحديث الرتبة من السيرفر للتأكد من المزامنة
-            try {
-                const response = await fetch(SCRIPT_URL, {
-                    method: "POST",
-                    body: JSON.stringify({ action: "getCurrentRole", payload: { userId: userId } })
-                });
-                const result = await response.json();
-                if (result.success && result.roleId !== roleId) {
-                    localStorage.setItem("userRole", result.roleId);
-                    updateUIMenu(result.roleId, name);
-                }
-            } catch (e) { console.error("Sync Error"); }
+        if (result.success) {
+            // تحديث الرتبة في التخزين المحلي وفي الواجهة بناءً على رد السيرفر فقط
+            const currentRoleFromServer = result.roleId; 
+            localStorage.setItem("userRole", currentRoleFromServer);
+            
+            // تحديث القوائم والواجهة بناءً على ما قاله السيرفر الآن
+            updateUIMenu(currentRoleFromServer, name);
+        } else {
+            // إذا فشل السيرفر في إيجاد المستخدم (مثلاً تم حذفه)
+            alert("جلسة العمل انتهت أو المستخدم غير موجود");
+            logout();
         }
+    } catch (e) {
+        console.error("خطأ في الاتصال بالسيرفر:", e);
+        // في حال انقطاع الإنترنت، نعتمد على آخر رتبة مسجلة مؤقتاً لعدم تعطيل المستخدم
+        let lastRole = localStorage.getItem("userRole");
+        updateUIMenu(lastRole, name);
+        document.getElementById("roleText").innerText += " (وضع الأوفلاين)";
+    }
+}
+
 
         function logout() { 
             localStorage.clear(); 
